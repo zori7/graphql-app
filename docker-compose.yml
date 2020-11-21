@@ -1,0 +1,44 @@
+version: '3.7'
+
+services:
+
+  web:
+    build:
+      context: ./docker/php
+      args:
+        uid: ${UID:-1000}
+        gid: ${GID:-1001}
+    depends_on:
+      - db
+    volumes:
+      - ./:/home/devuser/app
+      - ./storage/tmp/cache/composer:/home/devuser/.composer/cache
+    restart: always
+
+  db:
+    image: mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_secret
+      - MYSQL_DATABASE=graphql_app
+      - MYSQL_USER=graphql_user
+      - MYSQL_PASSWORD=secret
+    volumes:
+      - ./storage/tmp/db:/var/lib/mysql
+    restart: always
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 9000:8080
+
+  nginx:
+    build: ./docker/nginx
+    ports:
+      - ${NGINX_PORT:-80}:80
+    volumes:
+      - ./:/home/devuser/app
+      - ${FRONTEND_PATH:-../graphql-app-frontend/build}:/home/devuser/frontend
+    depends_on:
+      - web
+    restart: always
